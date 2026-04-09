@@ -22,7 +22,7 @@ jobs:
     - name: Install Snyk
       run: npm install -g snyk
 
-    - name: Snyk Container Scan
+    - name: Snyk Container Scan (Detailed)
       run: |
-        snyk auth ${{ secrets.SNYK_TOKEN }}
-        snyk container test nehalwandhare/backend:latest
+         snyk auth ${{ secrets.SNYK_TOKEN }}
+         snyk container test nehalwandhare/backend:latest --file=Dockerfile
