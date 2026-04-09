@@ -1,21 +1,36 @@
 FROM ubuntu:24.04
 
-USER root
+# Set environment variables
+ENV TOMCAT_VERSION=9.0.108
+ENV TOMCAT_HOME=/opt/tomcat
 
-RUN apt update -y
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jdk curl && \
+    apt-get clean
 
-RUN apt install default-jdk -y
+# Create tomcat directory
+WORKDIR $TOMCAT_HOME
 
-WORKDIR /opt/tomcat/
+# Download and extract Tomcat
+RUN curl -L https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz \
+    -o tomcat.tar.gz && \
+    tar -xvzf tomcat.tar.gz --strip-components=1 && \
+    rm tomcat.tar.gz
 
-ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.108/bin/apache-tomcat-9.0.108.tar.gz /opt/tomcat/
+# Download WAR file
+RUN curl -L https://s3-us-west-2.amazonaws.com/studentapi-cit/student.war \
+    -o $TOMCAT_HOME/webapps/student.war
 
-RUN tar -xvzf apache-tomcat-9.0.108.tar.gz  -C /opt/tomcat/
+# Download MySQL connector
+RUN curl -L https://s3-us-west-2.amazonaws.com/studentapi-cit/mysql-connector.jar \
+    -o $TOMCAT_HOME/lib/mysql-connector.jar
 
-ADD https://s3-us-west-2.amazonaws.com/studentapi-cit/student.war /opt/tomcat/apache-tomcat-9.0.108/webapps/
+# Copy context file
+COPY context.xml $TOMCAT_HOME/conf/context.xml
 
-ADD https://s3-us-west-2.amazonaws.com/studentapi-cit/mysql-connector.jar /opt/tomcat/apache-tomcat-9.0.108/lib/
+# Expose port
+EXPOSE 8080
 
-COPY context.xml ./apache-tomcat-9.0.108/conf/context.xml
-
-CMD ["apache-tomcat-9.0.108/bin/catalina.sh","run"]
+# Start Tomcat
+CMD ["sh", "-c", "$TOMCAT_HOME/bin/catalina.sh run"]
