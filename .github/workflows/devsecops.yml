@@ -12,13 +12,15 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Build Docker Images
-      run: docker compose build
+    - name: Build Images
+      run: |
+        docker compose build
+        docker tag threetier-using-docker-backend nehalwandhare/backend:latest
 
     - name: Install Snyk
       run: npm install -g snyk
 
-    - name: Snyk Scan
+    - name: Snyk Container Scan
       run: |
         snyk auth ${{ secrets.SNYK_TOKEN }}
-        snyk test
+        snyk container test nehalwandhare/backend:latest
