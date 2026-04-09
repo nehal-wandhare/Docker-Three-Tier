@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Build Images
       run: docker compose build
@@ -21,16 +21,17 @@ jobs:
     - name: List Docker Images
       run: docker images
 
+
   # 🔹 SNYK JOB
   snyk:
     runs-on: ubuntu-latest
-    needs: build   # depends on build
+    needs: build
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Build Images (again for this job)
+    - name: Build Images
       run: docker compose build
 
     - name: Install Snyk
@@ -38,17 +39,35 @@ jobs:
 
     - name: Snyk Container Scan
       run: |
-       snyk auth ${{ secrets.SNYK_TOKEN }}
-       snyk container test nehalwandhare/backend:latest \
-       --severity-threshold=high || true
+        snyk auth ${{ secrets.SNYK_TOKEN }}
+        snyk container test nehalwandhare/backend:latest \
+        --severity-threshold=high || true
+
+
+  # 🔹 TRIVY JOB (SEPARATE)
+  trivy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Build Images
+      run: docker compose build
 
     - name: Install Trivy
       run: |
         sudo apt-get update
-        sudo apt-get install -y wget
-        wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.0_Linux-64bit.deb
-        sudo dpkg -i trivy_0.50.0_Linux-64bit.deb
+        sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+
+        sudo apt-get update
+        sudo apt-get install -y trivy
 
     - name: Trivy Scan
       run: |
-        trivy image nehalwandhare/backend:latest  
+        trivy image nehalwandhare/backend:latest \
+        --severity HIGH,CRITICAL || true
