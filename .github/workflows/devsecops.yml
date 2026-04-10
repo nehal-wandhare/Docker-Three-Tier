@@ -71,12 +71,13 @@ jobs:
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@v2
       with:
-        args: >
-          -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
-          -Dsonar.organization=${{ secrets.SONAR_ORG }}
-          -Dsonar.sources=Backend/src
-          -Dsonar.java.binaries=Backend/target/classes
-          -Dsonar.coverage.jacoco.xmlReportPaths=Backend/target/site/jacoco/jacoco.xml
+       args: >
+        -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+        -Dsonar.organization=${{ secrets.SONAR_ORG }}
+        -Dsonar.sources=Backend/src
+        -Dsonar.exclusions=Frontend/**,Database/**,**/Dockerfile
+        -Dsonar.java.binaries=Backend/target/classes
+        -Dsonar.coverage.jacoco.xmlReportPaths=Backend/target/site/jacoco/jacoco.xml
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
