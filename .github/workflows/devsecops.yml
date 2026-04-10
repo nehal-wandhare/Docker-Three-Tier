@@ -15,34 +15,41 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 🔹 Setup Java (for coverage)
+    # 🔹 Setup Java
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    # 🔹 Build & Test with Coverage (JaCoCo)
+    # 🔹 Build & Test with Coverage
     - name: Build & Test with Coverage
       run: |
         cd Backend
         mvn clean verify
 
+    # 🔍 DEBUG (VERY IMPORTANT)
+    - name: Check Coverage Files
+      run: |
+        echo "Checking jacoco folder..."
+        ls Backend/target/site/jacoco || echo "jacoco folder not found"
+
     # 🔹 Build Docker Images
     - name: Build Images
       run: docker compose build
 
-    # 🔹 SNYK SCAN
+    # 🔹 Install Snyk
     - name: Install Snyk
       run: npm install -g snyk
 
+    # 🔹 Snyk Scan
     - name: Snyk Scan
       run: |
         snyk auth ${{ secrets.SNYK_TOKEN }}
         snyk container test nehalwandhare/backend:latest \
         --severity-threshold=high || true
 
-    # 🔹 TRIVY SCAN
+    # 🔹 Install Trivy
     - name: Install Trivy
       run: |
         sudo apt-get update
@@ -54,12 +61,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y trivy
 
+    # 🔹 Trivy Scan
     - name: Trivy Scan
       run: |
         trivy image nehalwandhare/backend:latest \
         --severity HIGH,CRITICAL || true
 
-    # 🔹 SONARCLOUD (WITH COVERAGE)
+    # 🔹 SonarCloud Scan (FIXED)
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@v2
       with:
@@ -67,11 +75,12 @@ jobs:
           -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
           -Dsonar.organization=${{ secrets.SONAR_ORG }}
           -Dsonar.sources=Backend/src
+          -Dsonar.java.binaries=Backend/target/classes
           -Dsonar.coverage.jacoco.xmlReportPaths=Backend/target/site/jacoco/jacoco.xml
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-    # 🔹 RUN APP FOR DAST
+    # 🔹 Run Application
     - name: Run Application
       run: docker compose up -d
 
