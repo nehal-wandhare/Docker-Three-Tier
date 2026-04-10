@@ -116,5 +116,7 @@ jobs:
 
     - name: OWASP ZAP Scan
       run: |
-        docker run --network="host" -t owasp/zap2docker-stable zap-baseline.py \
-        -t http://localhost:8080/student || true
+       docker run --network="host" -v $(pwd):/zap/wrk/:rw \
+       ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+       -t http://localhost:8080/student \
+       -r zap-report.html || true
