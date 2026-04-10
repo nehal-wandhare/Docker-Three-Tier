@@ -2,7 +2,7 @@ name: DevSecOps Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -11,45 +11,45 @@ jobs:
 
     steps:
 
-    # 🔹 Checkout
+    # 🔹 1. Checkout Code
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 🔹 Setup Java
+    # 🔹 2. Setup Java
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    # 🔹 Build & Test with Coverage
+    # 🔹 3. Build & Test with Coverage (JaCoCo)
     - name: Build & Test with Coverage
       run: |
         cd Backend
         mvn clean verify
 
-    # 🔍 DEBUG (VERY IMPORTANT)
+    # 🔹 4. Verify Coverage File
     - name: Check Coverage Files
       run: |
         echo "Checking jacoco folder..."
         ls Backend/target/site/jacoco || echo "jacoco folder not found"
 
-    # 🔹 Build Docker Images
+    # 🔹 5. Build Docker Images
     - name: Build Images
       run: docker compose build
 
-    # 🔹 Install Snyk
+    # 🔹 6. Install Snyk
     - name: Install Snyk
       run: npm install -g snyk
 
-    # 🔹 Snyk Scan
+    # 🔹 7. Snyk Scan (SCA + Container)
     - name: Snyk Scan
       run: |
         snyk auth ${{ secrets.SNYK_TOKEN }}
         snyk container test nehalwandhare/backend:latest \
         --severity-threshold=high || true
 
-    # 🔹 Install Trivy
+    # 🔹 8. Install Trivy
     - name: Install Trivy
       run: |
         sudo apt-get update
@@ -61,36 +61,38 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y trivy
 
-    # 🔹 Trivy Scan
+    # 🔹 9. Trivy Scan (Container Security)
     - name: Trivy Scan
       run: |
         trivy image nehalwandhare/backend:latest \
         --severity HIGH,CRITICAL || true
 
-    # 🔹 SonarCloud Scan (FIXED)
+    # 🔹 10. SonarCloud Scan (SAST + Coverage)
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@v2
       with:
         args: >
           -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
           -Dsonar.organization=${{ secrets.SONAR_ORG }}
-          -Dsonar.sources=Backend/src
+          -Dsonar.sources=.
           -Dsonar.java.binaries=Backend/target/classes
           -Dsonar.coverage.jacoco.xmlReportPaths=Backend/target/site/jacoco/jacoco.xml
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-    # 🔹 Run Application
+    # 🔹 11. Run Application (for DAST)
     - name: Run Application
       run: docker compose up -d
 
+    # 🔹 12. Wait for App
     - name: Wait for App
       run: sleep 40
 
+    # 🔹 13. Check App Health
     - name: Check App
       run: curl -I http://localhost:8080/student || true
 
-    # 🔹 OWASP ZAP
+    # 🔹 14. OWASP ZAP Scan (DAST)
     - name: OWASP ZAP Scan
       run: |
         docker run --network="host" -v $(pwd):/zap/wrk/:rw \
@@ -98,7 +100,7 @@ jobs:
         -t http://localhost:8080/student \
         -r zap-report.html || true
 
-    # 🔹 Upload ZAP Report
+    # 🔹 15. Upload ZAP Report
     - name: Upload ZAP Report
       uses: actions/upload-artifact@v4
       with:
