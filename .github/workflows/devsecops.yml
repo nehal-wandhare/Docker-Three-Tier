@@ -42,7 +42,7 @@ jobs:
     - name: Install Snyk
       run: npm install -g snyk
 
-    # 🔹 7. Snyk Scan (SCA + Container)
+    # 🔹 7. Snyk Scan
     - name: Snyk Scan
       run: |
         snyk auth ${{ secrets.SNYK_TOKEN }}
@@ -61,26 +61,26 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y trivy
 
-    # 🔹 9. Trivy Scan (Container Security)
+    # 🔹 9. Trivy Scan
     - name: Trivy Scan
       run: |
         trivy image nehalwandhare/backend:latest \
         --severity HIGH,CRITICAL || true
 
-    # 🔹 10. SonarCloud Scan (SAST + Coverage)
+    # 🔹 10. SonarCloud Scan (FIXED FOR COVERAGE)
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@v2
       with:
         args: >
           -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
           -Dsonar.organization=${{ secrets.SONAR_ORG }}
-          -Dsonar.sources=.
+          -Dsonar.sources=Backend/src
           -Dsonar.java.binaries=Backend/target/classes
           -Dsonar.coverage.jacoco.xmlReportPaths=Backend/target/site/jacoco/jacoco.xml
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-    # 🔹 11. Run Application (for DAST)
+    # 🔹 11. Run Application
     - name: Run Application
       run: docker compose up -d
 
@@ -92,7 +92,7 @@ jobs:
     - name: Check App
       run: curl -I http://localhost:8080/student || true
 
-    # 🔹 14. OWASP ZAP Scan (DAST)
+    # 🔹 14. OWASP ZAP Scan
     - name: OWASP ZAP Scan
       run: |
         docker run --network="host" -v $(pwd):/zap/wrk/:rw \
