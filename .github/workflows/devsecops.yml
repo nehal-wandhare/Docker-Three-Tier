@@ -22,7 +22,7 @@ jobs:
       run: docker images
 
 
-  # 🔹 SNYK JOB
+  # 🔹 SNYK JOB (Dependency + Container Scan)
   snyk:
     runs-on: ubuntu-latest
     needs: build
@@ -44,7 +44,7 @@ jobs:
         --severity-threshold=high || true
 
 
-  # 🔹 TRIVY JOB (SEPARATE)
+  # 🔹 TRIVY JOB (Container Scan)
   trivy:
     runs-on: ubuntu-latest
     needs: build
@@ -71,3 +71,23 @@ jobs:
       run: |
         trivy image nehalwandhare/backend:latest \
         --severity HIGH,CRITICAL || true
+
+
+  # 🔹 SAST JOB (SonarCloud)
+  sonar:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@v2
+      with:
+        args: >
+          -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+          -Dsonar.organization=${{ secrets.SONAR_ORG }}
+          -Dsonar.sources=.
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
