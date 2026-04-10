@@ -22,7 +22,7 @@ jobs:
       run: docker images
 
 
-  # 🔹 SNYK JOB (Dependency + Container Scan)
+  # 🔹 SNYK JOB
   snyk:
     runs-on: ubuntu-latest
     needs: build
@@ -44,7 +44,7 @@ jobs:
         --severity-threshold=high || true
 
 
-  # 🔹 TRIVY JOB (Container Scan)
+  # 🔹 TRIVY JOB
   trivy:
     runs-on: ubuntu-latest
     needs: build
@@ -91,3 +91,30 @@ jobs:
           -Dsonar.sources=.
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+
+  # 🔥 DAST JOB (OWASP ZAP)
+  zap:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Build Images
+      run: docker compose build
+
+    - name: Run Application
+      run: docker compose up -d
+
+    - name: Wait for Application
+      run: sleep 40
+
+    - name: Check App Health
+      run: curl -I http://localhost:8080/student || true
+
+    - name: OWASP ZAP Scan
+      run: |
+        docker run --network="host" -t owasp/zap2docker-stable zap-baseline.py \
+        -t http://localhost:8080/student || true
